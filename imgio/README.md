@@ -11,4 +11,4 @@ Example: `imgio "copy %IMG_IN% %IMG_OUT%" <image.png >same.png`
 
 Example of using waifu2x to process a video:
 
-ffmpeg -i in.avi -f image2pipe -c:v png - | imgio "waifu2x-caffe-cui -i %IMG_IN% -o %IMG_OUT%" | ffmpeg -f image2pipe -i - -c copy out.mov
+`ffmpeg -i in.avi -f image2pipe -c:v png - | imgio "waifu2x-caffe-cui -i %IMG_IN% -o %IMG_OUT%" | ffmpeg -f image2pipe -i - -c copy out.mov`
