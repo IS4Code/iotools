@@ -37,6 +37,8 @@ namespace imgio
 			uint length = Reader.ReadUInt32BE();
 			uint type = Reader.ReadUInt32BE();
 			
+			Log("PNG: found chunk {0:x} with length {1}", type, length);
+			
 			writer.WriteBE(length);
 			writer.WriteBE(type);
 			

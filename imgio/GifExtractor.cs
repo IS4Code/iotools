@@ -48,6 +48,7 @@ namespace imgio
 			byte indicator;
 			while((indicator = Reader.ReadByte()) != 0x3B)
 			{
+				Log("GIF: found indicator {0:x}", indicator);
 				writer.Write(indicator);
 				if(indicator == 0x2C)
 				{

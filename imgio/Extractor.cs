@@ -16,6 +16,44 @@ namespace imgio
 		
 		public int BufferSize{get; set;}
 		
+		public Action<string> Logger{get; set;}
+		
+		protected void Log(string msg)
+		{
+			var logger = Logger;
+			if(logger != null)
+			{
+				logger(msg);
+			}
+		}
+		
+		/*protected void Log(string format, params object[] args)
+		{
+			var logger = Logger;
+			if(logger != null)
+			{
+				logger(String.Format(format, args));
+			}
+		}*/
+		
+		protected void Log<T0>(string format, T0 arg0)
+		{
+			var logger = Logger;
+			if(logger != null)
+			{
+				logger(String.Format(format, arg0));
+			}
+		}
+		
+		protected void Log<T0, T1>(string format, T0 arg0, T1 arg1)
+		{
+			var logger = Logger;
+			if(logger != null)
+			{
+				logger(String.Format(format, arg0, arg1));
+			}
+		}
+		
 		public Extractor(Stream inputStream)
 		{
 			InputStream = inputStream;

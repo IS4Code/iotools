@@ -32,7 +32,12 @@ namespace imgio
 			uint length = Reader.ReadUInt32BE();
 			writer.WriteBE(length);
 			
-			Reader.CopyTo(writer, length, BufferSize);
+			uint type = Reader.ReadUInt32BE();
+			writer.WriteBE(type);
+			
+			Log("IFF: found FORM type {0:x} with length {1}", type, length+8);
+			
+			Reader.CopyTo(writer, length-4, BufferSize);
 		}
 	}
 }

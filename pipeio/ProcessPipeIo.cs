@@ -29,9 +29,13 @@ namespace pipeio
 		
 		public Action<string> Logger{get; set;}
 		
-		private void Log(string msg)
+		protected void Log(string msg)
 		{
-			if(Logger != null) Logger(msg);
+			var logger = Logger;
+			if(logger != null)
+			{
+				logger(msg);
+			}
 		}
 		
 		public ProcessPipeIo(string name, string arguments="", int bufferSize=4096)

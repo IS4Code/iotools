@@ -13,6 +13,8 @@ namespace imgio
 	{
 		public static bool Quiet;
 		public static bool Verbose;
+		public static bool Debug;
+		public static bool Copy;
 		public static int? BufferSize;
 		public static string Extension;
 		public static readonly List<string> Command = new List<string>();
@@ -31,7 +33,11 @@ namespace imgio
 				if(!Quiet && !Verbose)
 				{
 					options.Banner();
-					if(Command.Count == 0)
+					if(Copy && Command.Count > 0)
+					{
+						Console.Error.WriteLine("You cannot specify any command with the -C option.");
+						return;
+					}else if(!Copy && Command.Count == 0)
 					{
 						Console.Error.WriteLine("No command specified. Use --help for help.");
 						return;
@@ -56,53 +62,67 @@ namespace imgio
 							}else{
 								options.Log(ex.Description+" image #"+(count++)+" found.");
 							}
+							
+							if(Debug)
+							{
+								ex.Logger = options.Log;
+							}
 						}
 						
 						ex.BufferSize = bufferSize;
-						string inPath = GetTempPath(Extension ?? ex.Extension);
-						string outPath = GetTempPath(Extension ?? ex.Extension);
 						
-						using(var output = new FileStream(inPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, bufferSize))
+						if(!Copy)
 						{
-							ex.Extract(output);
-						}
-						
-						var start = new ProcessStartInfo("cmd", "/C "+cmd);
-						start.UseShellExecute = false;
-						start.RedirectStandardInput = true;
-						start.RedirectStandardOutput = true;
-						
-						start.EnvironmentVariables[InputName ?? "IMG_IN"] = inPath;
-						start.EnvironmentVariables[OutputName ?? "IMG_OUT"] = outPath;
-						
-						var proc = new Process{StartInfo = start};
-						
-						proc.Start();
-						
-						using(var stderr = Console.OpenStandardError(bufferSize))
-						{
-							var stdout = proc.StandardOutput.BaseStream;
-							stdout.CopyTo(stderr, bufferSize);
-						}
-						
-						proc.WaitForExit();
-						
-						if(File.Exists(outPath))
-						{
-							using(var stdout = Console.OpenStandardOutput(bufferSize))
-							using(var inFile = new FileStream(outPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize))
+							string inPath = GetTempPath(Extension ?? ex.Extension);
+							string outPath = GetTempPath(Extension ?? ex.Extension);
+							
+							using(var output = new FileStream(inPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, bufferSize))
 							{
-								inFile.CopyTo(stdout, bufferSize);
+								ex.Extract(output);
 							}
-							File.Delete(outPath);
+							
+							var start = new ProcessStartInfo("cmd", "/C "+cmd);
+							start.UseShellExecute = false;
+							start.RedirectStandardInput = true;
+							start.RedirectStandardOutput = true;
+							
+							start.EnvironmentVariables[InputName ?? "IMG_IN"] = inPath;
+							start.EnvironmentVariables[OutputName ?? "IMG_OUT"] = outPath;
+							
+							var proc = new Process{StartInfo = start};
+							
+							proc.Start();
+							
+							using(var stderr = Console.OpenStandardError(bufferSize))
+							{
+								var stdout = proc.StandardOutput.BaseStream;
+								stdout.CopyTo(stderr, bufferSize);
+							}
+							
+							proc.WaitForExit();
+							
+							if(File.Exists(outPath))
+							{
+								using(var stdout = Console.OpenStandardOutput(bufferSize))
+								using(var inFile = new FileStream(outPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize))
+								{
+									inFile.CopyTo(stdout, bufferSize);
+								}
+								File.Delete(outPath);
+							}else{
+								if(!Quiet && !Verbose)
+								{
+									options.Log("No image was written to the output path, skipping!");
+								}
+							}
+							
+							File.Delete(inPath);
 						}else{
-							if(!Quiet && !Verbose)
+							using(var stdout = Console.OpenStandardOutput(bufferSize))
 							{
-								options.Log("No image was written to the output path, skipping!");
+								ex.Extract(stdout);
 							}
 						}
-						
-						File.Delete(inPath);
 					}
 				}
 			}catch(Exception e)
@@ -143,11 +163,13 @@ namespace imgio
 			return new OptionInfoCollection{
 				{"q", "quiet", null, "do not print any additional messages"},
 				{"v", "verbose", null, "display less information"},
+				{"d", "debug", null, "print debug messages"},
 				{"e", "extension", "ext", "force an extension for the temporary paths"},
 				{"i", "in-name", "varname", "sets the name of the input image (default IMG_IN)"},
 				{"o", "out-name", "varname", "sets the name of the output image (default IMG_OUT)"},
 				{"c", "contained", null, "the program won't redirect the internal process' standard streams"},
 				{"b", "buffer-size", "size", "sets the size of the buffers (default 4096)"},
+				{"C", "copy", null, "no command will be run, it simply detects the images"},
 				{"?", "help", null, "displays this help message"},
 			};
 		}
@@ -183,6 +205,22 @@ namespace imgio
 						throw OptionAlreadySpecified(option);
 					}
 					Program.Verbose = true;
+					return OptionArgument.None;
+				case "d":
+				case "debug":
+					if(Program.Debug)
+					{
+						throw OptionAlreadySpecified(option);
+					}
+					Program.Debug = true;
+					return OptionArgument.None;
+				case "C":
+				case "copy":
+					if(Program.Copy)
+					{
+						throw OptionAlreadySpecified(option);
+					}
+					Program.Copy = true;
 					return OptionArgument.None;
 				case "e":
 				case "extension":

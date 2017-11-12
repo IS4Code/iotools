@@ -32,7 +32,12 @@ namespace imgio
 			uint length = Reader.ReadUInt32();
 			writer.Write(length);
 			
-			Reader.CopyTo(writer, length, BufferSize);
+			uint type = Reader.ReadUInt32();
+			writer.Write(type);
+			
+			Log("RIFF: found type {0:x} with length {1}", type, length+8);
+			
+			Reader.CopyTo(writer, length-4, BufferSize);
 		}
 	}
 }

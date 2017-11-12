@@ -31,6 +31,7 @@ namespace imgio
 			byte b;
 			while((b = ReadToMarker(writer)) != 0xD9)
 			{
+				Log("JPEG: found marker {0:x}", b);
 				switch(b)
 				{
 					case 0xD8:
