@@ -20,11 +20,11 @@ namespace imgio
 				if(length > buffer.Length)
 				{
 					count = source.Read(buffer, 0, buffer.Length);
-					if(count < buffer.Length) throw new EndOfStreamException();
+					if(count == 0) throw new EndOfStreamException();
 					destination.Write(buffer, 0, count);
 				}else{
 					count = source.Read(buffer, 0, (int)length);
-					if(count < length) throw new EndOfStreamException();
+					if(count == 0) throw new EndOfStreamException();
 					destination.Write(buffer, 0, count);
 				}
 				length -= (uint)count;
