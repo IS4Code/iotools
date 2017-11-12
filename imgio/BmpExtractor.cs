@@ -32,6 +32,10 @@ namespace imgio
 			writer.Write(Signature.ToCharArray());
 			
 			long length = Reader.ReadUInt32();
+			writer.Write((uint)length);
+			
+			Log("BMP: found {0} file with length {1}", Signature, length);
+			
 			Reader.CopyTo(writer, length-Signature.Length-4, BufferSize);
 		}
 	}
