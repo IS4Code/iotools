@@ -164,8 +164,8 @@ namespace ffcat
 			base.Description();
 			Console.Error.WriteLine();
 			Console.Error.Write(" ");
-			OutputWrapPad("Use this program to produce ffmpeg concat format file " +
-			              "from a series of pattern.", 1);
+			OutputWrapPad("Use this program to produce an ffmpeg concat format file " +
+			              "from a series of patterns.", 1);
 		}
 		
 		public override IList<OptionInfo> GetOptions()
@@ -173,6 +173,8 @@ namespace ffcat
 			return new OptionInfoCollection{
 				{"q", "quiet", null, "do not print any additional messages"},
 				{"p", "pattern-type", null, "set next pattern type (static, glob, regex)"},
+				{"r", "frame-rate", null, "the frame rate for all images"},
+				{"d", "duration", null, "the duration of all images"},
 				{"?", "help", null, "displays this help message"},
 			};
 		}
@@ -200,6 +202,9 @@ namespace ffcat
 					return OptionArgument.Required;
 				case "r":
 				case "frame-rate":
+					return OptionArgument.Required;
+				case "d":
+				case "duration":
 					return OptionArgument.Required;
 				case "?":
 				case "help":
