@@ -172,9 +172,9 @@ namespace ffcat
 		{
 			return new OptionInfoCollection{
 				{"q", "quiet", null, "do not print any additional messages"},
-				{"p", "pattern-type", null, "set next pattern type (static, glob, regex)"},
-				{"r", "frame-rate", null, "the frame rate for all images"},
-				{"d", "duration", null, "the duration of all images"},
+				{"p", "pattern-type", "type", "set next pattern type (static, glob, regex)"},
+				{"r", "frame-rate", "number", "the frame rate for all images"},
+				{"d", "duration", "number", "the duration of all images"},
 				{"?", "help", null, "displays this help message"},
 			};
 		}
