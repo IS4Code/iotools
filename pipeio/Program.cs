@@ -21,6 +21,7 @@ namespace pipeio
 		public static bool Contained;
 		public static bool Quiet;
 		public static bool Debug;
+		public static string Shell;
 		
 		public static string PipeInVar;
 		public static string PipeOutVar;
@@ -49,7 +50,13 @@ namespace pipeio
 				string outName = PipeOutVar ?? "PIPE_OUT";
 				
 				string cmdExe, cmdline;
-				ShellTools.CreateCommandLine(cmd, out cmdExe, out cmdline, (new[]{inName, outName}).Concat(Pipes.SelectMany(p => new[]{p+"_IN", p+"_OUT"})));
+				if(Shell != null)
+				{
+					cmdExe = Shell;
+					cmdline = cmd;
+				}else{
+					ShellTools.CreateCommandLine(cmd, out cmdExe, out cmdline, (new[]{inName, outName}).Concat(Pipes.SelectMany(p => new[]{p+"_IN", p+"_OUT"})));
+				}
 				
 				var io = new ProcessPipeIo(cmdExe, cmdline, BufferSize ?? 4096);
 				
@@ -121,6 +128,7 @@ namespace pipeio
 				{"o", "out-name", "varname", "sets the name of the output pipe (default PIPE_OUT)"},
 				{"c", "contained", null, "the program won't create i/o pipes"},
 				{"b", "buffer-size", "size", "sets the size of the buffers (default 4096)"},
+				{"S", "shell", "program", "specifies the interpreter to run inner commands"},
 				{"?", "help", null, "displays this help message"},
 			};
 		}
@@ -151,6 +159,9 @@ namespace pipeio
 				case "in-name":
 				case "o":
 				case "out-name":
+					return OptionArgument.Required;
+				case "S":
+				case "shell":
 					return OptionArgument.Required;
 				case "c":
 				case "contained":
@@ -201,6 +212,14 @@ namespace pipeio
 						throw ArgumentInvalid(option, "integer");
 					}
 					Program.BufferSize = bufferSize;
+					break;
+				case "S":
+				case "shell":
+					if(Program.Shell != null)
+					{
+						throw OptionAlreadySpecified(option);
+					}
+					Program.Shell = argument;
 					break;
 				case "p":
 				case "pipe":

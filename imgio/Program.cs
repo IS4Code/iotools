@@ -18,6 +18,7 @@ namespace imgio
 		public static int? BufferSize;
 		public static string Extension;
 		public static readonly List<string> Command = new List<string>();
+		public static string Shell;
 		
 		public static string InputName;
 		public static string OutputName;
@@ -52,7 +53,13 @@ namespace imgio
 				string outName = OutputName ?? "IMG_OUT";
 				
 				string cmdExe, cmdline;
-				ShellTools.CreateCommandLine(cmd, out cmdExe, out cmdline, inName, outName);
+				if(Shell != null)
+				{
+					cmdExe = Shell;
+					cmdline = cmd;
+				}else{
+					ShellTools.CreateCommandLine(cmd, out cmdExe, out cmdline, inName, outName);
+				}
 				
 				using(var stdin = Console.OpenStandardInput(bufferSize))
 				{
@@ -176,6 +183,7 @@ namespace imgio
 				{"c", "contained", null, "the program won't redirect the internal process' standard streams"},
 				{"b", "buffer-size", "size", "sets the size of the buffers (default 4096)"},
 				{"C", "copy", null, "no command will be run, it simply detects the images"},
+				{"S", "shell", "program", "specifies the interpreter to run inner commands"},
 				{"?", "help", null, "displays this help message"},
 			};
 		}
@@ -234,6 +242,9 @@ namespace imgio
 				case "e":
 				case "extension":
 					return OptionArgument.Required;
+				case "S":
+				case "shell":
+					return OptionArgument.Required;
 				case "?":
 				case "help":
 					Help();
@@ -267,6 +278,14 @@ namespace imgio
 						throw OptionAlreadySpecified(option);
 					}
 					Program.Extension = argument;
+					break;
+				case "S":
+				case "shell":
+					if(Program.Shell != null)
+					{
+						throw OptionAlreadySpecified(option);
+					}
+					Program.Shell = argument;
 					break;
 				case "i":
 				case "in-name":
