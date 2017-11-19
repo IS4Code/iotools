@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Threading;
 using iotools;
 
@@ -48,6 +49,38 @@ namespace imgio
 				
 				string cmd = String.Join(" ", Command);
 				
+				string inName = InputName ?? "IMG_IN";
+				string outName = OutputName ?? "IMG_OUT";
+				
+				bool windows;
+				
+				string cmdExe = Environment.GetEnvironmentVariable("COMSPEC");
+				string cmdArgs;
+				if(cmdExe != null)
+				{
+					string pattern = String.Format(@"\$(?:(?<v>{0}\b|{1}\b)|\{{(?<v>{0}|{1})\}})", Regex.Escape(inName), Regex.Escape(outName));
+					cmd = Regex.Replace(cmd, pattern, "%${v}%");
+					cmdArgs = "/C ";
+					windows = true;
+				}else{
+					cmdExe = Environment.GetEnvironmentVariable("SHELL");
+					if(cmdExe != null)
+					{
+						cmdArgs = "-c ";
+						windows = false;
+					}else{
+						cmdExe = "cmd";
+						cmdArgs = "/C ";
+						windows = true;
+					}
+				}
+				
+				if(!windows)
+				{
+					cmd = Regex.Replace(cmd, @"(\\|"")", @"\$1");
+				}
+				string cmdline = cmdArgs+"\""+cmd+"\"";
+				
 				using(var stdin = Console.OpenStandardInput(bufferSize))
 				{
 					int count = 0;
@@ -81,13 +114,13 @@ namespace imgio
 								ex.Extract(output);
 							}
 							
-							var start = new ProcessStartInfo("cmd", "/C "+cmd);
+							var start = new ProcessStartInfo(cmdExe, cmdline);
 							start.UseShellExecute = false;
 							start.RedirectStandardInput = true;
 							start.RedirectStandardOutput = true;
 							
-							start.EnvironmentVariables[InputName ?? "IMG_IN"] = inPath;
-							start.EnvironmentVariables[OutputName ?? "IMG_OUT"] = outPath;
+							start.EnvironmentVariables[inName] = inPath;
+							start.EnvironmentVariables[outName] = outPath;
 							
 							var proc = new Process{StartInfo = start};
 							
@@ -177,10 +210,13 @@ namespace imgio
 		protected override void Notes()
 		{
 			Console.Error.WriteLine();
-			Console.Error.WriteLine("Example: "+ExecutableName+" copy %IMG_IN% %IMG_OUT% <image.png >same.png");
+			Console.Error.WriteLine("Example: "+ExecutableName+" copy $IMG_IN $IMG_OUT <image.png >same.png");
 			Console.Error.WriteLine();
 			Console.Error.WriteLine("Supported formats: PNG, JPEG, GIF, BMP, RIFF, IFF.");
 			Console.Error.WriteLine("Standard output from the inner command is redirected to the standard error.");
+			Console.Error.WriteLine("The command-line interpreter is determined from the COMSPEC and SHELL environment variables. " +
+			                        "If CONHOST is specified, POSIX-style variables can be used in the command and they will be replaced " +
+			                        "with the correct CMD.EXE syntax.");
 		}
 		
 		protected override OptionArgument OnOptionFound(string option)
