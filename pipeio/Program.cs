@@ -45,7 +45,13 @@ namespace pipeio
 			
 				string cmd = String.Join(" ", Command);
 				
-				var io = new ProcessPipeIo("cmd", "/C "+cmd, BufferSize ?? 4096);
+				string inName = PipeInVar ?? "PIPE_IN";
+				string outName = PipeOutVar ?? "PIPE_OUT";
+				
+				string cmdExe, cmdline;
+				ShellTools.CreateCommandLine(cmd, out cmdExe, out cmdline, (new[]{inName, outName}).Concat(Pipes.SelectMany(p => new[]{p+"_IN", p+"_OUT"})));
+				
+				var io = new ProcessPipeIo(cmdExe, cmdline, BufferSize ?? 4096);
 				
 				if(!Quiet && Debug)
 				{
@@ -57,8 +63,8 @@ namespace pipeio
 					io.StandardOutputRedirect = StandardPipe.Error;
 					io.StandardErrorRedirect = StandardPipe.Error;
 					
-					io.InName = PipeInVar ?? "PIPE_IN";
-					io.OutName = PipeOutVar ?? "PIPE_OUT";
+					io.InName = inName;
+					io.OutName = outName;
 				}
 				io.InnerPipes.AddRange(Pipes);
 				var t = io.Start();

@@ -48,6 +48,9 @@
     <Compile Include="..\ApplicationOptions.cs">
       <Link>ApplicationOptions.cs</Link>
     </Compile>
+    <Compile Include="..\ShellTools.cs">
+      <Link>ShellTools.cs</Link>
+    </Compile>
     <Compile Include="BmpExtractor.cs" />
     <Compile Include="Extractor.cs" />
     <Compile Include="GifExtractor.cs" />

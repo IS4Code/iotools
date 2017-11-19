@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Text.RegularExpressions;
 using System.Threading;
 using iotools;
 
@@ -52,34 +51,8 @@ namespace imgio
 				string inName = InputName ?? "IMG_IN";
 				string outName = OutputName ?? "IMG_OUT";
 				
-				bool windows;
-				
-				string cmdExe = Environment.GetEnvironmentVariable("COMSPEC");
-				string cmdArgs;
-				if(cmdExe != null)
-				{
-					string pattern = String.Format(@"\$(?:(?<v>{0}\b|{1}\b)|\{{(?<v>{0}|{1})\}})", Regex.Escape(inName), Regex.Escape(outName));
-					cmd = Regex.Replace(cmd, pattern, "%${v}%");
-					cmdArgs = "/C ";
-					windows = true;
-				}else{
-					cmdExe = Environment.GetEnvironmentVariable("SHELL");
-					if(cmdExe != null)
-					{
-						cmdArgs = "-c ";
-						windows = false;
-					}else{
-						cmdExe = "cmd";
-						cmdArgs = "/C ";
-						windows = true;
-					}
-				}
-				
-				if(!windows)
-				{
-					cmd = Regex.Replace(cmd, @"(\\|"")", @"\$1");
-				}
-				string cmdline = cmdArgs+"\""+cmd+"\"";
+				string cmdExe, cmdline;
+				ShellTools.CreateCommandLine(cmd, out cmdExe, out cmdline, inName, outName);
 				
 				using(var stdin = Console.OpenStandardInput(bufferSize))
 				{
