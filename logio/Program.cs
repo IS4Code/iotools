@@ -27,6 +27,7 @@ namespace logio
 				if(!Quiet)
 				{
 					options.Banner();
+					Console.Error.WriteLine("Logging started. Use --help for help or -q to remove this message.");
 				}
 				
 				int bufferSize = BufferSize ?? 4096;
@@ -127,7 +128,7 @@ namespace logio
 			base.Description();
 			Console.Error.WriteLine();
 			Console.Error.Write(" ");
-			OutputWrapPad("This programs reads lines from the standard input, " +
+			OutputWrapPad("This programs reads lines from the standard input " +
 			              "and prepends them with the current date and time, " +
 			              "formatted in a user-specified way.", 1);
 		}
