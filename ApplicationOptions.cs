@@ -35,17 +35,23 @@ namespace iotools
 			var copyright = asm.GetCustomAttributes(typeof(AssemblyCopyrightAttribute), false);
 			if(copyright.Length > 0)
 			{
-				msg = ((AssemblyCopyrightAttribute)copyright[0]).Copyright+" ";
+				msg = ((AssemblyCopyrightAttribute)copyright[0]).Copyright;
 			}
 			var title = asm.GetCustomAttributes(typeof(AssemblyTitleAttribute), false);
 			if(title.Length > 0)
 			{
-				msg += ((AssemblyTitleAttribute)title[0]).Title+" by ";
+				msg += " "+((AssemblyTitleAttribute)title[0]).Title;
+				
+				var version = asm.GetName().Version;
+				if(version != null)
+				{
+					msg += " v"+version.ToString(2);
+				}
 			}
 			var author = asm.GetCustomAttributes(typeof(AssemblyCompanyAttribute), false);
 			if(author.Length > 0)
 			{
-				msg += ((AssemblyCompanyAttribute)author[0]).Company;
+				msg += " by "+((AssemblyCompanyAttribute)author[0]).Company;
 			}
 			Console.Error.WriteLine(msg);
 		}
