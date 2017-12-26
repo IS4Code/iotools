@@ -5,6 +5,7 @@ using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using iotools;
@@ -51,20 +52,28 @@ namespace ffvars
 			
 				string entries = String.Join(":", Entries);
 				
-				string ffprobeargs = "-v error -of flat";
+				var ffprobeargs = new List<string>();
+				ffprobeargs.Add("ffprobe");
+				
+				ffprobeargs.Add("-v");
+				ffprobeargs.Add("error");
+				ffprobeargs.Add("-of");
+				ffprobeargs.Add("flat");
 				if(Entries.Count > 0)
 				{
-					ffprobeargs += String.Format(" -show_entries {0}", String.Join(":", entries));
+					ffprobeargs.Add("-show_entries");
+					ffprobeargs.Add(String.Join(":", entries));
 				}
 				if(StreamSpec != null)
 				{
-					ffprobeargs += String.Format(" -select_streams "+StreamSpec);
+					ffprobeargs.Add("-select_streams");
+					ffprobeargs.Add(StreamSpec);
 				}
 				
-				ffprobeargs += " -";
+				ffprobeargs.Add("-");
 				
 				string fileName, arguments;
-				ShellTools.CreateCommandLine("ffprobe "+ffprobeargs, out fileName, out arguments);
+				ShellTools.CreateCommandLine(ffprobeargs, out fileName, out arguments);
 				
 				var start = new ProcessStartInfo(fileName, arguments);
 				start.UseShellExecute = false;
@@ -92,7 +101,7 @@ namespace ffvars
 						}
 					}
 				
-					ShellTools.CreateCommandLine(String.Join(" ", Command), out fileName, out arguments);
+					ShellTools.CreateCommandLine(Command, out fileName, out arguments);
 					
 					var cmdstart = new ProcessStartInfo(fileName, arguments);
 					cmdstart.UseShellExecute = false;

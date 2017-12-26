@@ -44,8 +44,6 @@ namespace pipeio
 					}
 				}
 			
-				string cmd = String.Join(" ", Command);
-				
 				string inName = PipeInVar ?? "PIPE_IN";
 				string outName = PipeOutVar ?? "PIPE_OUT";
 				
@@ -53,9 +51,9 @@ namespace pipeio
 				if(Shell != null)
 				{
 					cmdExe = Shell;
-					cmdline = cmd;
+					cmdline = String.Join(" ", Command);
 				}else{
-					ShellTools.CreateCommandLine(cmd, out cmdExe, out cmdline, (new[]{inName, outName}).Concat(Pipes.SelectMany(p => new[]{p+"_IN", p+"_OUT"})));
+					ShellTools.CreateCommandLine(Command, out cmdExe, out cmdline, (new[]{inName, outName}).Concat(Pipes.SelectMany(p => new[]{p+"_IN", p+"_OUT"})));
 				}
 				
 				var io = new ProcessPipeIo(cmdExe, cmdline, BufferSize ?? 4096);

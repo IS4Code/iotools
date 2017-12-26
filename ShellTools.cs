@@ -8,43 +8,78 @@ namespace iotools
 {
 	public static class ShellTools
 	{
-		public static void CreateCommandLine(string command, out string fileName, out string arguments, params string[] variables)
+		public static void CreateCommandLine(IList<string> cmdlist, out string fileName, out string arguments, params string[] variables)
 		{
-			CreateCommandLine(command, out fileName, out arguments, (IEnumerable<string>)variables);
+			CreateCommandLine(cmdlist, out fileName, out arguments, (IEnumerable<string>)variables);
 		}
 		
-		public static void CreateCommandLine(string command, out string fileName, out string arguments, IEnumerable<string> variables)
+		public static void CreateCommandLine(IList<string> cmdlist, out string fileName, out string arguments, IEnumerable<string> variables)
 		{
 			bool windows;
+			GetSystemShell(out windows, out fileName, out arguments);
 			
+			if(windows)
+			{
+				Regex varRegex = new Regex(String.Format(@"\$(?:(?<v>{0})|\{{(?<v>{1})\}})", String.Join("|", variables.Select(v => Regex.Escape(v)+"\\b")), String.Join("|", variables.Select(v => Regex.Escape(v)))));
+				Func<string, string> argReplacer = s => WindowsEscapeArgument(varRegex.Replace(s, "%${v}%"));
+				
+				arguments += String.Format(" \"{0}\"", String.Join(" ", cmdlist.Select(argReplacer)));
+			}else{
+				arguments += String.Format(" {0}", String.Join(" ", cmdlist.Select(PosixEscapeArgument)));
+			}
+		}
+		
+		public static string EscapeArgument(string arg)
+		{
+			bool comspec;
+			string fileName, arguments;
+			GetSystemShell(out comspec, out fileName, out arguments);
+			if(comspec)
+			{
+				return WindowsEscapeArgument(arg);
+			}else{
+				return PosixEscapeArgument(arg);
+			}
+		}
+		
+		static string WindowsEscapeArgument(string arg)
+		{
+			if(arg.Any(c => c == '"' || c == ' ' || c == '\t' || c == '\v'))
+			{
+				return "\""+arg.Replace("\"", "\"\"")+"\"";
+			}else{
+				return arg;
+			}
+		}
+		
+		static string PosixEscapeArgument(string arg)
+		{
+			return "\""+Regex.Replace(arg, @"(\\|"")", @"\$1")+"\"";
+		}
+		
+		static void GetSystemShell(out bool comspec, out string fileName, out string arguments)
+		{
 			fileName = Environment.GetEnvironmentVariable("COMSPEC");
-			string cmdArgs;
 			if(fileName != null)
 			{
-				string pattern = String.Format(@"\$(?:(?<v>{0})|\{{(?<v>{1})\}})", String.Join("|", variables.Select(v => Regex.Escape(v)+"\\b")), String.Join("|", variables.Select(v => Regex.Escape(v))));
-				
-				command = Regex.Replace(command, pattern, "%${v}%");
-				cmdArgs = "/C ";
-				windows = true;
+				comspec = true;
 			}else{
 				fileName = Environment.GetEnvironmentVariable("SHELL");
 				if(fileName != null)
 				{
-					cmdArgs = "-c ";
-					windows = false;
+					comspec = false;
 				}else{
 					fileName = "cmd";
-					cmdArgs = "/C ";
-					windows = true;
+					comspec = true;
 				}
 			}
 			
-			if(!windows)
+			if(comspec)
 			{
-				command = Regex.Replace(command, @"(\\|"")", @"\$1");
+				arguments = "/C";
+			}else{
+				arguments = "-c";
 			}
-			
-			arguments = cmdArgs+"\""+command+"\"";
 		}
 	}
 }

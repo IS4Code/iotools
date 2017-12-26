@@ -47,8 +47,6 @@ namespace imgio
 				
 				int bufferSize = BufferSize ?? 4096;
 				
-				string cmd = String.Join(" ", Command);
-				
 				string inName = InputName ?? "IMG_IN";
 				string outName = OutputName ?? "IMG_OUT";
 				
@@ -56,9 +54,9 @@ namespace imgio
 				if(Shell != null)
 				{
 					cmdExe = Shell;
-					cmdline = cmd;
+					cmdline = String.Join(" ", Command);
 				}else{
-					ShellTools.CreateCommandLine(cmd, out cmdExe, out cmdline, inName, outName);
+					ShellTools.CreateCommandLine(Command, out cmdExe, out cmdline, inName, outName);
 				}
 				
 				using(var stdin = Console.OpenStandardInput(bufferSize))
