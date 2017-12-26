@@ -172,12 +172,17 @@ namespace iotools
 			
 		}
 		
+		public virtual string ProcessArg(string arg)
+		{
+			return arg;
+		}
+		
 		public void Parse(string[] args)
 		{
 			bool operands = false;
 			for(int i = 0; i < args.Length; i++)
 			{
-				string arg = args[i];
+				string arg = ProcessArg(args[i]);
 				if(operands)
 				{
 					OnOperandFound(arg);
@@ -205,7 +210,7 @@ namespace iotools
 								break;
 							case OptionArgument.Required:
 								if(++i >= args.Length) throw ArgumentExpected(name);
-								OnOptionArgumentFound(name, args[i]);
+								OnOptionArgumentFound(name, ProcessArg(args[i]));
 								break;
 						}
 					}
@@ -242,7 +247,7 @@ namespace iotools
 									{
 										throw ArgumentExpected(opt);
 									}else{
-										OnShortOptionArgumentFound(opt, args[i]);
+										OnShortOptionArgumentFound(opt, ProcessArg(args[i]));
 									}
 								}
 								break;
