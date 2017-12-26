@@ -18,6 +18,8 @@ namespace iotools
 			bool windows;
 			GetSystemShell(out windows, out fileName, out arguments);
 			
+			if(cmdlist == null) return;
+			
 			if(windows)
 			{
 				Regex varRegex = new Regex(String.Format(@"\$(?:(?<v>{0})|\{{(?<v>{1})\}})", String.Join("|", variables.Select(v => Regex.Escape(v)+"\\b")), String.Join("|", variables.Select(v => Regex.Escape(v)))));
@@ -26,6 +28,27 @@ namespace iotools
 				arguments += String.Format(" \"{0}\"", String.Join(" ", cmdlist.Select(argReplacer)));
 			}else{
 				arguments += String.Format(" {0}", String.Join(" ", cmdlist.Select(PosixEscapeArgument)));
+			}
+		}
+		
+		public static void CreateCommandLine(string command, out string fileName, out string arguments, params string[] variables)
+		{
+			CreateCommandLine(command, out fileName, out arguments, (IEnumerable<string>)variables);
+		}
+		
+		public static void CreateCommandLine(string command, out string fileName, out string arguments, IEnumerable<string> variables)
+		{
+			bool windows;
+			GetSystemShell(out windows, out fileName, out arguments);
+			
+			if(windows)
+			{
+				Regex varRegex = new Regex(String.Format(@"\$(?:(?<v>{0})|\{{(?<v>{1})\}})", String.Join("|", variables.Select(v => Regex.Escape(v)+"\\b")), String.Join("|", variables.Select(v => Regex.Escape(v)))));
+				command = varRegex.Replace(command, "%${v}%");
+				
+				arguments += String.Format(" \"{0}\"", command);
+			}else{
+				arguments += String.Format(" {0}", command);
 			}
 		}
 		

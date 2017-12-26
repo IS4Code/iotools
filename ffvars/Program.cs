@@ -22,6 +22,8 @@ namespace ffvars
 		public static List<string> Entries = new List<string>();
 		public static List<string> Command = new List<string>();
 		public static string InputFile;
+		public static bool LiteralLine;
+		public static bool Debug;
 		
 		public static void Main(string[] args)
 		{
@@ -34,114 +36,37 @@ namespace ffvars
 				//if(!Quiet && !Verbose)
 				{
 					options.Banner();
-					if(Entries.Count == 0)
-					{
-						Console.Error.WriteLine("No entries specified. Use --help for help. Use -v to remove this message.");
-					}
-					foreach(var entry in Entries)
-					{
-						if(entry.IndexOf(':') != -1)
-						{
-							Console.Error.WriteLine("Error: ':' cannot be a part of an entry specifier ({0}).", entry);
-							return;
-						}
-					}
 				}
-				
-				int bufferSize = BufferSize ?? 4096;
-			
-				string entries = String.Join(":", Entries);
-				
-				var ffprobeargs = new List<string>();
-				ffprobeargs.Add("ffprobe");
-				
-				ffprobeargs.Add("-v");
-				ffprobeargs.Add("error");
-				ffprobeargs.Add("-of");
-				ffprobeargs.Add("flat");
-				if(Entries.Count > 0)
+				if(Entries.Count == 0)
 				{
-					ffprobeargs.Add("-show_entries");
-					ffprobeargs.Add(String.Join(":", entries));
+					Console.Error.WriteLine("No entries specified. Use --help for help.");
+					return;
 				}
-				if(StreamSpec != null)
+				foreach(var entry in Entries)
 				{
-					ffprobeargs.Add("-select_streams");
-					ffprobeargs.Add(StreamSpec);
-				}
-				
-				ffprobeargs.Add("-");
-				
-				string fileName, arguments;
-				ShellTools.CreateCommandLine(ffprobeargs, out fileName, out arguments);
-				
-				var start = new ProcessStartInfo(fileName, arguments);
-				start.UseShellExecute = false;
-				start.RedirectStandardOutput = true;
-				start.RedirectStandardInput = true;
-				var proc = new Process{StartInfo = start};
-				proc.EnableRaisingEvents = true;
-				
-				proc.Start();
-				
-				
-				var pin = proc.StandardInput.BaseStream;
-				using(var input = InputFile == null || InputFile == "-" ? Console.OpenStandardInput(bufferSize) : new FileStream(InputFile, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize))
-				{
-					var inputBuffer = CopyInput ? new MemoryStream() : null;
-					byte[] buffer = new byte[bufferSize];
-					while(!proc.HasExited)
+					if(entry.IndexOf(':') != -1)
 					{
-						int read = input.Read(buffer, 0, buffer.Length);
-						if(read == 0) break;
-						pin.Write(buffer, 0, buffer.Length);
-						if(CopyInput)
-						{
-							inputBuffer.Write(buffer, 0, buffer.Length);
-						}
-					}
-				
-					ShellTools.CreateCommandLine(Command, out fileName, out arguments);
-					
-					var cmdstart = new ProcessStartInfo(fileName, arguments);
-					cmdstart.UseShellExecute = false;
-					cmdstart.RedirectStandardInput = true;
-					
-					string param;
-					while((param = proc.StandardOutput.ReadLine()) != null)
-					{
-						options.Log(param);
-						ParseEntry(param, cmdstart.EnvironmentVariables);
-					}
-					
-					proc = new Process{StartInfo = cmdstart};
-					
-					proc.Start();
-					
-					if(CopyInput)
-					{
-						pin = proc.StandardInput.BaseStream;
-						
-						inputBuffer.Position = 0;
-						while(!proc.HasExited)
-						{
-							int read = inputBuffer.Read(buffer, 0, buffer.Length);
-							if(read == 0) break;
-							pin.Write(buffer, 0, buffer.Length);
-						}
-						while(!proc.HasExited)
-						{
-							int read = input.Read(buffer, 0, buffer.Length);
-							if(read == 0) break;
-							pin.Write(buffer, 0, buffer.Length);
-						}
+						Console.Error.WriteLine("Error: ':' cannot be a part of an entry specifier ({0}).", entry);
+						return;
 					}
 				}
-				
-				if(!Exit)
+				if(Command.Count == 0)
 				{
-					proc.WaitForExit();
+					Console.Error.WriteLine("No command specified.");
+					return;
 				}
+				
+				var extractor = new FFProbeExtractor();
+				extractor.BufferSize = BufferSize ?? 4096;
+				extractor.LiteralLine = LiteralLine;
+				extractor.CopyInput = CopyInput;
+				extractor.Exit = Exit;
+				if(Debug)
+				{
+					extractor.Logger = options.Log;
+				}
+				
+				extractor.Run(InputFile, Entries, StreamSpec, Command);
 			}catch(Exception e)
 			{
 				//if(!Quiet && !Verbose)
@@ -149,26 +74,6 @@ namespace ffvars
 					options.Log(e.Message);
 				}
 			}
-		}
-		
-		static readonly Regex entryRegex = new Regex(@"^(?<name>.+?)=(?:""(?<value>.*)""|(?<value>.*))$", RegexOptions.Compiled);
-		public static bool ParseEntry(string entry, StringDictionary environment)
-		{
-			var match = entryRegex.Match(entry);
-			if(!match.Success) return false;
-			
-			string name = match.Groups["name"].Value;
-			string value = match.Groups["value"].Value;
-			
-			environment[name] = RemoveBackslashes(value);
-			
-			return true;
-		}
-		
-		static readonly Regex backslashRegex = new Regex(@"\\+", RegexOptions.Compiled);
-		public static string RemoveBackslashes(string str)
-		{
-			return backslashRegex.Replace(str, m => new String('\\', m.Value.Length/2));
 		}
 	}
 	
@@ -196,7 +101,9 @@ namespace ffvars
 				{"i", "input", "file", "sets the input file (stdin by default)"},
 				{"c", "copy", null, "copy the input to the inner command"},
 				{"s", "streams", "specifier", "sets the stream specifier for the file"},
+				{"l", "literal-command", null, "copies the command line without parsing the arguments"},
 				{"e", "exit", null, "do not wait for the inner command to exit"},
+				{"d", "debug", null, "print debug messages"},
 				{"b", "buffer-size", "size", "sets the size of the buffers (default 4096)"},
 				{"?", "help", null, "displays this help message"},
 			};
@@ -205,7 +112,7 @@ namespace ffvars
 		protected override void Notes()
 		{
 			Console.Error.WriteLine();
-			Console.Error.WriteLine("Example: "+ExecutableName+" format.duration : echo %format.duration% <file.avi");
+			Console.Error.WriteLine("Example: "+ExecutableName+" format=duration : echo %format.duration% <file.avi");
 		}
 		
 		protected override OptionArgument OnOptionFound(string option)
@@ -223,6 +130,14 @@ namespace ffvars
 					}
 					Program.Exit = true;
 					return OptionArgument.None;
+				case "d":
+				case "debug":
+					if(Program.Debug)
+					{
+						throw OptionAlreadySpecified(option);
+					}
+					Program.Debug = true;
+					return OptionArgument.None;
 				case "c":
 				case "copy":
 					if(Program.CopyInput)
@@ -230,6 +145,14 @@ namespace ffvars
 						throw OptionAlreadySpecified(option);
 					}
 					Program.CopyInput = true;
+					return OptionArgument.None;
+				case "l":
+				case "literal-command":
+					if(Program.LiteralLine)
+					{
+						throw OptionAlreadySpecified(option);
+					}
+					Program.LiteralLine = true;
 					return OptionArgument.None;
 				case "s":
 				case "streams":
