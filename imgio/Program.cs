@@ -147,7 +147,7 @@ namespace imgio
 		
 		private static string GetTempPath(string extension)
 		{
-			return Path.ChangeExtension(Path.GetTempFileName(), extension);
+			return Path.ChangeExtension(Path.GetTempPath()+Guid.NewGuid(),  extension);
 		}
 	}
 	
