@@ -20,8 +20,6 @@ namespace pipeio
 		public string InName{get; set;}
 		public string OutName{get; set;}
 		
-		public bool Contained{get; set;}
-		
 		public StandardPipe StandardOutputRedirect{get; set;}
 		public StandardPipe StandardErrorRedirect{get; set;}
 		
@@ -50,7 +48,10 @@ namespace pipeio
 		{
 			var start = new ProcessStartInfo(Name, Arguments);
 			start.UseShellExecute = false;
-			start.RedirectStandardInput = true;
+			if(InName != null)
+			{
+				start.RedirectStandardInput = true;
+			}
 			if(StandardOutputRedirect != StandardPipe.None)
 			{
 				start.RedirectStandardOutput = true;
@@ -85,7 +86,6 @@ namespace pipeio
 				tasks.Add(outPipe);
 				Log(OutName+" = "+outPipeName);
 			}
-			
 			
 			foreach(var pipe in InnerPipes)
 			{
@@ -193,7 +193,9 @@ namespace pipeio
 			using(var input = new NamedPipeServerStream(inname, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.WriteThrough | PipeOptions.Asynchronous))
 			{
 				try{
+					Log("Waiting for "+dispname+"...");
 					Task.WaitAll(new[]{output.WaitForConnectionAsync(cancellationToken), input.WaitForConnectionAsync(cancellationToken)}, cancellationToken);
+					Log("Pipe "+dispname+" connected.");
 				}catch(AggregateException ag)
 				{
 					foreach(var e in ag.InnerExceptions)
