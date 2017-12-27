@@ -24,12 +24,12 @@ namespace passio
 			try{
 				options.Parse(args);
 				
-				if(!Quiet && !Verbose)
+				if(!Quiet)
 				{
 					options.Banner();
 					if(InputFiles.Count == 0)
 					{
-						Console.Error.WriteLine("No input files given. Use --help for help. Use -v to remove this message.");
+						Console.Error.WriteLine("No input files given. Use --help for help. Use -q to remove this message.");
 					}
 				}
 				
@@ -62,10 +62,10 @@ namespace passio
 						{
 							if(Verbose)
 							{
-								Console.Error.WriteLine(length);
-							}else{
 								string name = input == "-" ? "input" : Path.GetFileName(input);
 								options.Log("Length of "+name+": "+length);
+							}else{
+								Console.Error.WriteLine(length);
 							}
 						}
 					}
@@ -74,15 +74,15 @@ namespace passio
 					{
 						if(Verbose)
 						{
-							Console.Error.WriteLine(length);
-						}else{
 							options.Log("Total length: "+length);
+						}else{
+							Console.Error.WriteLine(length);
 						}
 					}
 				}
 			}catch(Exception e)
 			{
-				if(!Quiet && !Verbose)
+				if(!Quiet)
 				{
 					options.Log(e.Message);
 				}
@@ -113,7 +113,7 @@ namespace passio
 		{
 			return new OptionInfoCollection{
 				{"q", "quiet", null, "do not print any additional messages"},
-				{"v", "verbose", null, "display less information"},
+				{"v", "verbose", null, "more detailed information"},
 				{"t", "total-length", null, "display the total length instead of individual lengths"},
 				{"b", "buffer-size", "size", "sets the size of the buffers (default 4096)"},
 				{"?", "help", null, "displays this help message"},

@@ -31,18 +31,18 @@ namespace imgio
 			try{
 				options.Parse(args);
 				
-				if(!Quiet && !Verbose)
+				if(!Quiet)
 				{
 					options.Banner();
-					if(Copy && Command.Count > 0)
-					{
-						Console.Error.WriteLine("You cannot specify any command with the -C option.");
-						return;
-					}else if(!Copy && Command.Count == 0)
-					{
-						Console.Error.WriteLine("No command specified. Use --help for help.");
-						return;
-					}
+				}
+				if(Copy && Command.Count > 0)
+				{
+					Console.Error.WriteLine("You cannot specify any command with the -C option.");
+					return;
+				}else if(!Copy && Command.Count == 0)
+				{
+					Console.Error.WriteLine("No command specified. Use --help for help.");
+					return;
 				}
 				
 				int bufferSize = BufferSize ?? 4096;
@@ -69,9 +69,9 @@ namespace imgio
 						{
 							if(Verbose)
 							{
-								options.Log((count++).ToString());
-							}else{
 								options.Log(ex.Description+" image #"+(count++)+" found.");
+							}else{
+								options.Log((count++).ToString());
 							}
 							
 							if(Debug)
@@ -121,7 +121,7 @@ namespace imgio
 								}
 								File.Delete(outPath);
 							}else{
-								if(!Quiet && !Verbose)
+								if(!Quiet)
 								{
 									options.Log("No image was written to the output path, skipping!");
 								}
@@ -138,7 +138,7 @@ namespace imgio
 				}
 			}catch(Exception e)
 			{
-				if(!Quiet && !Verbose)
+				if(!Quiet)
 				{
 					options.Log(e.Message);
 				}
@@ -173,7 +173,7 @@ namespace imgio
 		{
 			return new OptionInfoCollection{
 				{"q", "quiet", null, "do not print any additional messages"},
-				{"v", "verbose", null, "display less information"},
+				{"v", "verbose", null, "more detailed information"},
 				{"d", "debug", null, "print debug messages"},
 				{"e", "extension", "ext", "force an extension for the temporary paths"},
 				{"i", "in-name", "varname", "sets the name of the input image (default IMG_IN)"},
