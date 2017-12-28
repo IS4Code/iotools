@@ -39,7 +39,7 @@ namespace ffvars
 			
 			Process proc;
 			
-			Stream input = (inputFile == null || inputFile == "-") ? Console.OpenStandardInput(BufferSize) : new FileStream(inputFile, FileMode.Open, FileAccess.Read, FileShare.Read, BufferSize);
+			Stream input = inputFile == null ? Console.OpenStandardInput(BufferSize) : new FileStream(inputFile, FileMode.Open, FileAccess.Read, FileShare.Read, BufferSize);
 			if(CopyInput)
 			{
 				using(input)
@@ -47,23 +47,23 @@ namespace ffvars
 					var inputBuffer = new MemoryStream();
 					CopyToProcessBuffered(input, ffprobe, inputBuffer, BufferSize);
 					
-					proc = CreateCommand(ffprobe.StandardOutput, command);
+					proc = CreateCommand(ffprobe.StandardOutput, command, false);
 					proc.Start();
 					
 					inputBuffer.Position = 0;
 					CopyToProcessBuffered(inputBuffer, proc, null, BufferSize);
 					CopyToProcessBuffered(input, proc, null, BufferSize);
 				}
+				proc.StandardInput.Close();
 			}else{
 				using(input)
 				{
 					CopyToProcessBuffered(input, ffprobe, null, BufferSize);
 				}
 				
-				proc = CreateCommand(ffprobe.StandardOutput, command);
+				proc = CreateCommand(ffprobe.StandardOutput, command, inputFile != null);
 				proc.Start();
 			}
-			proc.StandardInput.Close();
 			
 			if(!Exit)
 			{
@@ -129,7 +129,7 @@ namespace ffvars
 		}
 		
 		//static readonly Regex colonRegex = new Regex(@"[ \t\v]+\:[ \t\v]+", RegexOptions.Compiled);
-		Process CreateCommand(StreamReader entryReader, IList<string> command)
+		Process CreateCommand(StreamReader entryReader, IList<string> command, bool openInput)
 		{
 			string fileName, arguments;
 			
@@ -147,7 +147,7 @@ namespace ffvars
 			
 			var cmdstart = new ProcessStartInfo(fileName, arguments);
 			cmdstart.UseShellExecute = false;
-			cmdstart.RedirectStandardInput = true;
+			cmdstart.RedirectStandardInput = !openInput;
 			
 			string entry;
 			while((entry = entryReader.ReadLine()) != null)

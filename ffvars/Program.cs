@@ -66,7 +66,7 @@ namespace ffvars
 					extractor.Logger = options.Log;
 				}
 				
-				extractor.Run(InputFile, Entries, StreamSpec, Command);
+				extractor.Run(InputFile == "-" ? null : InputFile, Entries, StreamSpec, Command);
 			}catch(Exception e)
 			{
 				//if(!Quiet && !Verbose)
