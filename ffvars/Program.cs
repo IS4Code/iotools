@@ -24,6 +24,7 @@ namespace ffvars
 		public static string InputFile;
 		public static bool LiteralLine;
 		public static bool Debug;
+		public static string Shell;
 		
 		public static void Main(string[] args)
 		{
@@ -59,6 +60,7 @@ namespace ffvars
 				var extractor = new FFProbeExtractor();
 				extractor.BufferSize = BufferSize ?? 4096;
 				extractor.LiteralLine = LiteralLine;
+				extractor.Shell = Shell;
 				extractor.CopyInput = CopyInput;
 				extractor.Exit = Exit;
 				if(Debug)
@@ -105,6 +107,7 @@ namespace ffvars
 				{"e", "exit", null, "do not wait for the inner command to exit"},
 				{"d", "debug", null, "print debug messages"},
 				{"b", "buffer-size", "size", "sets the size of the buffers (default 4096)"},
+				{"S", "shell", "program", "specifies the interpreter to run inner commands"},
 				{"?", "help", null, "displays this help message"},
 			};
 		}
@@ -160,6 +163,9 @@ namespace ffvars
 				case "i":
 				case "input":
 					return OptionArgument.Required;
+				case "S":
+				case "shell":
+					return OptionArgument.Required;
 				case "?":
 				case "help":
 					Help();
@@ -201,6 +207,14 @@ namespace ffvars
 						throw OptionAlreadySpecified(option);
 					}
 					Program.InputFile = argument;
+					break;
+				case "S":
+				case "shell":
+					if(Program.Shell != null)
+					{
+						throw OptionAlreadySpecified(option);
+					}
+					Program.Shell = argument;
 					break;
 			}
 		}

@@ -17,6 +17,7 @@ namespace ffvars
 		public bool Exit;
 		public bool CopyInput;
 		public bool LiteralLine;
+		public string Shell;
 		
 		protected void Log(string msg)
 		{
@@ -132,17 +133,29 @@ namespace ffvars
 		Process CreateCommand(StreamReader entryReader, IList<string> command, bool openInput)
 		{
 			string fileName, arguments;
-			
 			if(LiteralLine)
 			{
 				string cmdline = Environment.CommandLine;
 				
 				int pos = cmdline.IndexOf(':');
 				if(pos == -1) throw new ApplicationException("Cannot find ':' in the command line.");
+				cmdline = cmdline.Substring(pos+1);
 				
-				ShellTools.CreateCommandLine(cmdline.Substring(pos+1), out fileName, out arguments);
+				if(Shell != null)
+				{
+					fileName = Shell;
+					arguments = cmdline;
+				}else{
+					ShellTools.CreateCommandLine(cmdline, out fileName, out arguments);
+				}
 			}else{
-				ShellTools.CreateCommandLine(command, out fileName, out arguments);
+				if(Shell != null)
+				{
+					fileName = Shell;
+					arguments = ShellTools.CreateArgumentsPosix(command);
+				}else{
+					ShellTools.CreateCommandLine(command, out fileName, out arguments);
+				}
 			}
 			
 			var cmdstart = new ProcessStartInfo(fileName, arguments);
