@@ -27,8 +27,13 @@ namespace iotools
 				
 				arguments += String.Format(" \"{0}\"", String.Join(" ", cmdlist.Select(argReplacer)));
 			}else{
-				arguments += String.Format(" {0}", String.Join(" ", cmdlist.Select(PosixEscapeArgument)));
+				arguments += " "+CreateArgumentsPosix(cmdlist);
 			}
+		}
+		
+		public static string CreateArgumentsPosix(IList<string> arguments)
+		{
+			return String.Join(" ", arguments.Select(PosixEscapeArgument));
 		}
 		
 		public static void CreateCommandLine(string command, out string fileName, out string arguments, params string[] variables)

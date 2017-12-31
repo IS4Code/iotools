@@ -21,6 +21,8 @@ namespace pipeio
 		public static bool Contained;
 		public static bool Quiet;
 		public static bool Debug;
+		public static bool LiteralLine;
+		public static bool CommandOperands;
 		public static string Shell;
 		
 		public static string PipeInVar;
@@ -47,16 +49,33 @@ namespace pipeio
 				string inName = PipeInVar ?? "PIPE_IN";
 				string outName = PipeOutVar ?? "PIPE_OUT";
 				
-				string cmdExe, cmdline;
-				if(Shell != null)
+				string fileName, arguments;
+				if(LiteralLine)
 				{
-					cmdExe = Shell;
-					cmdline = String.Join(" ", Command);
+					string cmdline = Environment.CommandLine;
+					
+					int pos = cmdline.IndexOf(':');
+					if(pos == -1) throw new ApplicationException("Cannot find ':' in the command line.");
+					cmdline = cmdline.Substring(pos+1);
+					
+					if(Shell != null)
+					{
+						fileName = Shell;
+						arguments = cmdline;
+					}else{
+						ShellTools.CreateCommandLine(cmdline, out fileName, out arguments, inName, outName);
+					}
 				}else{
-					ShellTools.CreateCommandLine(Command, out cmdExe, out cmdline, (new[]{inName, outName}).Concat(Pipes.SelectMany(p => new[]{p+"_IN", p+"_OUT"})));
+					if(Shell != null)
+					{
+						fileName = Shell;
+						arguments = ShellTools.CreateArgumentsPosix(Command);
+					}else{
+						ShellTools.CreateCommandLine(Command, out fileName, out arguments, inName, outName);
+					}
 				}
 				
-				var io = new ProcessPipeIo(cmdExe, cmdline, BufferSize ?? 4096);
+				var io = new ProcessPipeIo(fileName, arguments, BufferSize ?? 4096);
 				
 				if(!Quiet && Debug)
 				{
@@ -124,6 +143,7 @@ namespace pipeio
 				{"p", "pipe", "varname", "creates an internal pipe and exports it as %varname_IN% and %varname_OUT%"},
 				{"i", "in-name", "varname", "sets the name of the input pipe (default PIPE_IN)"},
 				{"o", "out-name", "varname", "sets the name of the output pipe (default PIPE_OUT)"},
+				{"l", "literal-command", null, "copies the command line without parsing the arguments"},
 				{"c", "contained", null, "the program won't create i/o pipes"},
 				{"b", "buffer-size", "size", "sets the size of the buffers (default 4096)"},
 				{"S", "shell", "program", "specifies the interpreter to run inner commands"},
@@ -141,6 +161,11 @@ namespace pipeio
 		
 		protected override OperandState OnOperandFound(string operand)
 		{
+			if(operand == ":" && !Program.CommandOperands)
+			{
+				Program.CommandOperands = true;
+				return OperandState.OnlyOperands;
+			}
 			Program.Command.Add(operand);
 			return OperandState.OnlyOperands;
 		}
@@ -168,6 +193,14 @@ namespace pipeio
 						throw OptionAlreadySpecified(option);
 					}
 					Program.Contained = true;
+					return OptionArgument.None;
+				case "l":
+				case "literal-command":
+					if(Program.LiteralLine)
+					{
+						throw OptionAlreadySpecified(option);
+					}
+					Program.LiteralLine = true;
 					return OptionArgument.None;
 				case "q":
 				case "quiet":

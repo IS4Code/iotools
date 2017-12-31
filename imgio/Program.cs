@@ -15,6 +15,8 @@ namespace imgio
 		public static bool Verbose;
 		public static bool Debug;
 		public static bool Copy;
+		public static bool LiteralLine;
+		public static bool CommandOperands;
 		public static int? BufferSize;
 		public static string Extension;
 		public static readonly List<string> Command = new List<string>();
@@ -50,13 +52,30 @@ namespace imgio
 				string inName = InputName ?? "IMG_IN";
 				string outName = OutputName ?? "IMG_OUT";
 				
-				string cmdExe, cmdline;
-				if(Shell != null)
+				string fileName, arguments;
+				if(LiteralLine)
 				{
-					cmdExe = Shell;
-					cmdline = String.Join(" ", Command);
+					string cmdline = Environment.CommandLine;
+					
+					int pos = cmdline.IndexOf(':');
+					if(pos == -1) throw new ApplicationException("Cannot find ':' in the command line.");
+					cmdline = cmdline.Substring(pos+1);
+					
+					if(Shell != null)
+					{
+						fileName = Shell;
+						arguments = cmdline;
+					}else{
+						ShellTools.CreateCommandLine(cmdline, out fileName, out arguments, inName, outName);
+					}
 				}else{
-					ShellTools.CreateCommandLine(Command, out cmdExe, out cmdline, inName, outName);
+					if(Shell != null)
+					{
+						fileName = Shell;
+						arguments = ShellTools.CreateArgumentsPosix(Command);
+					}else{
+						ShellTools.CreateCommandLine(Command, out fileName, out arguments, inName, outName);
+					}
 				}
 				
 				using(var stdin = Console.OpenStandardInput(bufferSize))
@@ -92,7 +111,7 @@ namespace imgio
 								ex.Extract(output);
 							}
 							
-							var start = new ProcessStartInfo(cmdExe, cmdline);
+							var start = new ProcessStartInfo(fileName, arguments);
 							start.UseShellExecute = false;
 							start.RedirectStandardInput = true;
 							start.RedirectStandardOutput = true;
@@ -178,6 +197,7 @@ namespace imgio
 				{"e", "extension", "ext", "force an extension for the temporary paths"},
 				{"i", "in-name", "varname", "sets the name of the input image (default IMG_IN)"},
 				{"o", "out-name", "varname", "sets the name of the output image (default IMG_OUT)"},
+				{"l", "literal-command", null, "copies the command line without parsing the arguments"},
 				{"c", "contained", null, "the program won't redirect the internal process' standard streams"},
 				{"b", "buffer-size", "size", "sets the size of the buffers (default 4096)"},
 				{"C", "copy", null, "no command will be run, it simply detects the images"},
@@ -236,6 +256,14 @@ namespace imgio
 						throw OptionAlreadySpecified(option);
 					}
 					Program.Copy = true;
+					return OptionArgument.None;
+				case "l":
+				case "literal-command":
+					if(Program.LiteralLine)
+					{
+						throw OptionAlreadySpecified(option);
+					}
+					Program.LiteralLine = true;
 					return OptionArgument.None;
 				case "e":
 				case "extension":
@@ -306,6 +334,11 @@ namespace imgio
 		
 		protected override OperandState OnOperandFound(string operand)
 		{
+			if(operand == ":" && !Program.CommandOperands)
+			{
+				Program.CommandOperands = true;
+				return OperandState.OnlyOperands;
+			}
 			Program.Command.Add(operand);
 			return OperandState.OnlyOperands;
 		}
