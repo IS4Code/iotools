@@ -45,9 +45,9 @@ namespace ffvars
 				}
 				foreach(var entry in Entries)
 				{
-					if(entry.IndexOf(':') != -1)
+					if(!Regex.IsMatch(entry, @"^[a-zA-Z0-9=,]*$"))
 					{
-						Console.Error.WriteLine("Error: ':' cannot be a part of an entry specifier ({0}).", entry);
+						Console.Error.WriteLine("Error: Invalid characters in an entry specifier ({0}).", entry);
 						return;
 					}
 				}
@@ -55,6 +55,15 @@ namespace ffvars
 				{
 					Console.Error.WriteLine("No command specified.");
 					return;
+				}
+				if(StreamSpec != null)
+				{
+					if(!Regex.IsMatch(StreamSpec, @"^[a-zA-Z0-9\.]*$"))
+					{
+						Console.Error.WriteLine("Error: Invalid characters in the stream specifier ({0}).", StreamSpec);
+						return;
+					}
+					StreamSpec = StreamSpec.Replace('.', ':');
 				}
 				
 				var extractor = new FFProbeExtractor();
