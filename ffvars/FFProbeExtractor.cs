@@ -116,7 +116,14 @@ namespace ffvars
 			ffprobeargs.Add("-");
 			
 			string fileName, arguments;
-			ShellTools.CreateCommandLine(ffprobeargs, out fileName, out arguments);
+			
+			if(Shell != null)
+			{
+				fileName = Shell;
+				arguments = ShellTools.CreateArgumentsPosix(ffprobeargs);
+			}else{
+				ShellTools.CreateCommandLine(ffprobeargs, out fileName, out arguments);
+			}
 			
 			var start = new ProcessStartInfo(fileName, arguments);
 			start.UseShellExecute = false;
