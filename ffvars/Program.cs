@@ -45,7 +45,7 @@ namespace ffvars
 				}
 				foreach(var entry in Entries)
 				{
-					if(!Regex.IsMatch(entry, @"^[a-zA-Z0-9=,]*$"))
+					if(!Regex.IsMatch(entry, @"^[a-zA-Z0-9=,_]*$"))
 					{
 						Console.Error.WriteLine("Error: Invalid characters in an entry specifier ({0}).", entry);
 						return;
